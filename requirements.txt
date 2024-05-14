@@ -1,0 +1,6 @@
+deepface
+flask
+Flask-SQLAlchemy
+mysqlclient
+gunicorn
+flask_cors
