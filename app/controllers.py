@@ -69,8 +69,8 @@ def identify_image(body):
             }
             
             print("similarity", similarity)
-            if similarity<0.52:
-                print("harusnya muka cocok karena similarity dibawah 0.52")
+            if similarity<0.42:
+                print("harusnya muka cocok karena similarity dibawah 0.42")
                 
                 # RESPONSE SUCCESS 200
                 data = {
@@ -91,7 +91,7 @@ def identify_image(body):
                 return json.dumps(successResult, sort_keys=False)
             
         
-        print("harusnya muka ga cocok karena similarity diatas 0.52")
+        print("harusnya muka ga cocok karena similarity diatas 0.42")
         # RESPONSE SUCCESS 400
         print("-------- USER NOT FOUND, PLEASE REGISTER")
         successResult['err_code'] = 400
@@ -139,6 +139,19 @@ def verify_image(body):
 
         # RESPONSE SUCCESS
         df = dict(df)
+        print(df["distance"])
+        if df["distance"]<0.44:
+            error_result = {
+                "name": "Erro compare images",
+                "message": "success to compare two images",
+                "err_code": 404,
+                "data": {
+                    "match": False,
+                    "distance": df["distance"],
+                }
+            }
+            return json.dumps(error_result, sort_keys=False)
+        
         result = {
             "name": "compare images",
             "message": "success to compare two images",
@@ -307,8 +320,8 @@ def add_fr_user(body):
                 "similarity": similarity
             }
             
-            if similarity<0.52:
-                print("harusnya muka cocok karena similarity dibawah 0.52")
+            if similarity<0.42:
+                print("harusnya muka cocok karena similarity dibawah 0.42")
             
                 # LOCAL DELETE : image from /temp directory
                 if os.path.exists(os.path.join(tempDir, filename1)):
@@ -328,7 +341,7 @@ def add_fr_user(body):
                 }
                 return json.dumps(error_result, sort_keys=False)
 
-        print("harusnya muka ga cocok karena similarity diatas 0.52")
+        print("harusnya muka ga cocok karena similarity diatas 0.42")
         # INSERT: to table fr_user
         newFrUser = FrUser(nama=nama, nip=nip, nik=nik,
                            nama_tenant=nama_tenant)
