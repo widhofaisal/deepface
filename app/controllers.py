@@ -35,6 +35,8 @@ def identify_image(body):
         df = DeepFace.find(os.path.join(
             tempDir, filename), db_path="images", enforce_detection=False)
         print("-------- identify --> AI --> ", df)
+        tempDf = df
+        print("==tempDf==",tempDf)
         df = df[0]
 
         # DEFINE:
@@ -69,8 +71,8 @@ def identify_image(body):
             }
             
             print("similarity", similarity)
-            if similarity<0.42:
-                print("harusnya muka cocok karena similarity dibawah 0.42")
+            if similarity<0.61:
+                print("harusnya muka cocok karena similarity dibawah 0.61")
                 
                 # RESPONSE SUCCESS 200
                 data = {
@@ -91,7 +93,7 @@ def identify_image(body):
                 return json.dumps(successResult, sort_keys=False)
             
         
-        print("harusnya muka ga cocok karena similarity diatas 0.42")
+        print("harusnya muka ga cocok karena similarity diatas 0.61")
         # RESPONSE SUCCESS 400
         print("-------- USER NOT FOUND, PLEASE REGISTER")
         successResult['err_code'] = 400
@@ -320,8 +322,8 @@ def add_fr_user(body):
                 "similarity": similarity
             }
             
-            if similarity<0.42:
-                print("harusnya muka cocok karena similarity dibawah 0.42")
+            if similarity<0.61:
+                print("harusnya muka cocok karena similarity dibawah 0.61")
             
                 # LOCAL DELETE : image from /temp directory
                 if os.path.exists(os.path.join(tempDir, filename1)):
@@ -341,7 +343,7 @@ def add_fr_user(body):
                 }
                 return json.dumps(error_result, sort_keys=False)
 
-        print("harusnya muka ga cocok karena similarity diatas 0.42")
+        print("harusnya muka ga cocok karena similarity diatas 0.61")
         # INSERT: to table fr_user
         newFrUser = FrUser(nama=nama, nip=nip, nik=nik,
                            nama_tenant=nama_tenant)
