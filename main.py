@@ -8,8 +8,8 @@ if os.environ.get('FR_MODEL_INITIAL', '0') in ('0',):
     # app.run()
 
 # Uncomment code below for running in local windows (python main.py) + laragon
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all()
-#     app.run()
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(port=6000)
     

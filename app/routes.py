@@ -3,7 +3,7 @@ from deepface import DeepFace
 import pandas as pd
 import os
 
-from app.controllers import identify_image, verify_image, delete_embedded_file, add_fr_user, get_image, get_user, delete_user, update_image
+from app.controllers import identify_image, get_identify_distance, verify_image, delete_embedded_file, add_fr_user, get_image, get_user, delete_user, update_image, get_distance_level, set_identify_distance, set_verify_distance
 from app import app
 
     
@@ -18,6 +18,21 @@ def identify():
 def verify():
     body = request.json
     return verify_image(body)
+
+# ENDPOINT:
+@app.route("/core/level", methods=['GET'])
+def distance_level(identity_id=1):
+    return get_distance_level(identity_id)
+
+# ENDPOINT:
+@app.route("/core/identify/level/<new_level>", methods=["PUT"])
+def identify_level(new_level):
+    return set_identify_distance(new_level)
+
+# ENDPOINT:
+@app.route("/core/verify/level/<new_level>", methods=["PUT"])
+def verify_level(new_level):
+    return set_verify_distance(new_level)
 
 # ENDPOINT:
 @app.route("/core/embedded", methods=["DELETE"])

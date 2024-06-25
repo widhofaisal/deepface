@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 from deepface import DeepFace
 import pandas as pd
 
@@ -9,7 +9,7 @@ from datetime import datetime
 
 from utils.images import base64_to_jpg, image_to_base64, delete_image_file
 from utils.crud import identify_return, get_user_by_nik, get_image_by_id_fr_user
-from app.models import FrUser, Image, ResponseSuccess, ResultUser
+from app.models import FrUser, Image, LevelDistance, ResponseSuccess, ResultUser
 from app import db
 from app import app
 
@@ -18,106 +18,152 @@ tempDir = "temp"
 if not os.path.exists(tempDir):
     os.makedirs(tempDir)
 
-# TODO:
 # HELPER:
+def get_identify_distance(leveldistance_id=1):
+    level_distance = LevelDistance.query.get_or_404(leveldistance_id)
+    return level_distance.identify_distance
+def get_verify_distance(leveldistance_id=1):
+    level_distance = LevelDistance.query.get_or_404(leveldistance_id)
+    return level_distance.verify_distance
 
-
+# ENDPOINT
+def get_distance_level(distanceId):
+    level_distance = LevelDistance.query.get_or_404(distanceId)
+    return jsonify(ResponseSuccess(
+        paramName="get distance level",
+        paramMessage="success",
+        paramErrCode=200,
+        paramData=level_distance.to_dict()
+        ).to_dict()), 200
+    
+def set_identify_distance(newLevel, distanceId=1):
+    level_distance = LevelDistance.query.get_or_404(distanceId)
+    level_distance.identify_distance = newLevel
+    print(f"newLevel", newLevel)
+    db.session.commit()
+    return jsonify(ResponseSuccess(
+        paramName="update identify_distance",
+        paramMessage="success",
+        paramErrCode=201,
+        paramData=level_distance.to_dict()
+        ).to_dict()), 201
+    
+def set_verify_distance(newLevel, distanceId=1):
+    level_distance = LevelDistance.query.get_or_404(distanceId)
+    level_distance.verify_distance = newLevel
+    print(f"newLevel", newLevel)
+    db.session.commit()
+    return jsonify(ResponseSuccess(
+        paramName="update verify_distance",
+        paramMessage="success",
+        paramErrCode=201,
+        paramData=level_distance.to_dict()
+        ).to_dict()), 201
+    
+# ENDPOINT
 def identify_image(body):
-    try:
-        # BINDING: using json
-        base64_image1 = body.get("data")
+    # try:
+    currentLevel = get_identify_distance()
+    print(f"currentLevel: {currentLevel}")
+    # BINDING: using json
+    base64_image1 = body.get("data")
 
-        # Konversi base64 ke file .jpg and local write .jpg
-        filename = str(uuid.uuid4()) + ".jpg"
-        base64_to_jpg(base64_image1, filename, 'temp')
+    # Konversi base64 ke file .jpg and local write .jpg
+    filename = str(uuid.uuid4()) + ".jpg"
+    base64_to_jpg(base64_image1, filename, 'temp')
 
-        # AI:
-        df = DeepFace.find(os.path.join(
-            tempDir, filename), db_path="images", enforce_detection=False)
-        print("-------- identify --> AI --> ", df)
-        tempDf = df
-        print("==tempDf==",tempDf)
-        df = df[0]
+    # AI:
+    df = DeepFace.find(os.path.join(
+        tempDir, filename), db_path="images", enforce_detection=False)
+    print("-------- identify --> AI --> ", df)
+    tempDf = df
+    print("==tempDf==", tempDf)
+    df = df[0]
 
-        # DEFINE:
-        successResult = {
-            "name": "identify images",
-            "message": "success to identify image with all databases images",
-            "err_code": 200,
-            "data": ""
+    # DEFINE:
+    successResult = {
+        "name": "identify images",
+        "message": "success to identify image with all databases images",
+        "err_code": 200,
+        "data": ""
+    }
+
+    # CHECK : is pandas dataframe empty or not
+    # empty = face not match, not empty = face match
+    # define default value
+    isMatch = False
+    if df.shape[0] > 0:
+        isMatch = True
+        print("-------- USER ALREADY REGISTERED, PLEASE LOGIN")
+        print(
+            "-------- df --> ['distance'] --> ", df['distance'])
+
+        # Get filename with highest distance (most similar)
+        index_max_cosine = df['distance'].idxmin()
+        matchesFilename = df.loc[index_max_cosine, "identity"]
+        similarity = df.loc[index_max_cosine, "distance"]
+
+        # VERIFY: to get user identity
+        id, nik, idDips, username = identify_return(matchesFilename)
+
+        # APPEND: similarity to successResult
+        successResult["data"] = {
+            "similarity": similarity
         }
 
-        # CHECK : is pandas dataframe empty or not
-        # empty = face not match, not empty = face match
-        # define default value
-        isMatch = False
-        if df.shape[0] > 0:
-            isMatch = True
-            print("-------- USER ALREADY REGISTERED, PLEASE LOGIN")
-            print(
-                "-------- df --> ['distance'] --> ", df['distance'])
+        print("similarity", similarity)
+        if similarity < currentLevel:
+            print(f"harusnya muka cocok karena similarity dibawah {currentLevel}")
 
-            # Get filename with highest distance (most similar)
-            index_max_cosine = df['distance'].idxmin()
-            matchesFilename = df.loc[index_max_cosine, "identity"]
-            similarity = df.loc[index_max_cosine, "distance"]
-
-            # VERIFY: to get user identity
-            id, nik, idDips, username = identify_return(matchesFilename)
-            
-            # APPEND: similarity to successResult
-            successResult["data"] = {
-                "similarity" : similarity
-            }
-            
-            print("similarity", similarity)
-            if similarity<0.61:
-                print("harusnya muka cocok karena similarity dibawah 0.61")
-                
-                # RESPONSE SUCCESS 200
-                data = {
-                    "prediction": {
-                        "is_match": isMatch,
-                        "current_filename": "temp/"+filename,
-                        "matches_filename": matchesFilename
-                    },
-                    "result": {
-                        "id": id,
-                        "nik": nik,
-                        "nip": idDips,
-                        "similarity": similarity,
-                        "nama": username
-                    }
+            # RESPONSE SUCCESS 200
+            data = {
+                "prediction": {
+                    "is_match": isMatch,
+                    "current_filename": "temp/"+filename,
+                    "matches_filename": matchesFilename
+                },
+                "result": {
+                    "id": id,
+                    "nik": nik,
+                    "nip": idDips,
+                    "similarity": similarity,
+                    "nama": username
                 }
-                successResult['data'] = data
-                return json.dumps(successResult, sort_keys=False)
-            
-        
-        print("harusnya muka ga cocok karena similarity diatas 0.61")
-        # RESPONSE SUCCESS 400
-        print("-------- USER NOT FOUND, PLEASE REGISTER")
-        successResult['err_code'] = 400
-        successResult['data']["message"] = "face not found"
-        return json.dumps(successResult, sort_keys=False)
+            }
+            successResult['data'] = data
+            return json.dumps(successResult, sort_keys=False)
 
-    # RESPONSE ERROR
-    except Exception as e:
-        errorResult = {
-            "name": "identify images",
-            "message": f"An error occurred: {str(e)}",
-            "err_code": 500
-        }
-        return json.dumps(errorResult, sort_keys=False)
+    print(f"harusnya muka ga cocok karena similarity diatas {currentLevel}")
+    # RESPONSE SUCCESS 400
+    print("-------- USER NOT FOUND, PLEASE REGISTER")
+    successResult['err_code'] = 404
+    successResult['data'] = {
+        "message": "face not found"
+    }
+    # successResult['data']["message"] = "face not found"
+    return json.dumps(successResult, sort_keys=False)
 
-    finally:
-        # LOCAL DELETE : delete file .jpg in 'temp' directory
-        os.remove(os.path.join(tempDir, filename))
+    # # RESPONSE ERROR
+    # except Exception as e:
+    #     errorResult = {
+    #         "name": "identify images",
+    #         "message": f"An error occurred: {str(e)}",
+    #         "err_code": 500
+    #     }
+    #     return json.dumps(errorResult, sort_keys=False)
+
+    # finally:
+    #     # LOCAL DELETE : delete file .jpg in 'temp' directory
+    #     os.remove(os.path.join(tempDir, filename))
 
 
 # TODO:
 # HELPER:
 def verify_image(body):
     try:
+        currentLevel = get_verify_distance()
+        print(f"currentLevel: {currentLevel}")
+        
         # BINDING: using json
         imageDb = body.get("nik")
         imageReal = body.get("data")
@@ -142,7 +188,7 @@ def verify_image(body):
         # RESPONSE SUCCESS
         df = dict(df)
         print(df["distance"])
-        if df["distance"]<0.44:
+        if df["distance"] < currentLevel:
             error_result = {
                 "name": "Erro compare images",
                 "message": "success to compare two images",
@@ -153,7 +199,7 @@ def verify_image(body):
                 }
             }
             return json.dumps(error_result, sort_keys=False)
-        
+
         result = {
             "name": "compare images",
             "message": "success to compare two images",
@@ -300,7 +346,7 @@ def add_fr_user(body):
             tempDir, filename1), db_path="images", enforce_detection=False)
         print("-------- df --> ", df)
         df = df[0]
-        
+
         # DEFINE:
         result = {
             "name": "user register",
@@ -311,20 +357,19 @@ def add_fr_user(body):
         if df.shape[0] > 0:
             print("-------- USER ALREADY REGISTERED, PLEASE LOGIN")
 
-
             # Get filename with highest distance (most similar)
             index_max_cosine = df['distance'].idxmin()
             matchesFilename = df.loc[index_max_cosine, "identity"]
             similarity = df.loc[index_max_cosine, "distance"]
-            
+
             # APPEND:
             result["data"] = {
                 "similarity": similarity
             }
-            
-            if similarity<0.61:
+
+            if similarity < 0.61:
                 print("harusnya muka cocok karena similarity dibawah 0.61")
-            
+
                 # LOCAL DELETE : image from /temp directory
                 if os.path.exists(os.path.join(tempDir, filename1)):
                     os.remove(os.path.join(tempDir, filename1))
@@ -358,7 +403,7 @@ def add_fr_user(body):
         newImage = Image(id_fr_user=newFrUser.id_fr_user, filename=filename)
         db.session.add(newImage)
         db.session.commit()
-        
+
         # LOCAL DELETE : image from /temp directory
         if os.path.exists(os.path.join(tempDir, filename1)):
             os.remove(os.path.join(tempDir, filename1))

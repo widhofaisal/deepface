@@ -11,6 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 app.config.from_object(Config)
+app.config['JSON_SORT_KEYS'] = False
 app.logger.setLevel(logging.INFO)
 db = SQLAlchemy(app)
 
