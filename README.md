@@ -9,7 +9,15 @@
 - hit endpoint update image
 - TODO: harap dilakukan di latar belakang agar user ga nungguin lama/ paling hanya user pertama aja yang agak lama
 
-## CARA RUN 1 : pakai virtual env dan pm2
+## CARA RUN 1 : pakai gunicorn
+```
+gunicorn main:app -b 0.0.0.0:6000 --timeout 86400 --access-logfile /home/administrator/deepface/log/access.log --error-logfile /home/administrator/deepface/log/error.log --capture-output --log-level debug --daemon
+```
+- lokasi log access: /home/administrator/deepface/log/access.log
+- lokasi log error: /home/administrator/deepface/log/error.log
+<br>
+
+## CARA RUN 2 : pakai virtual env dan pm2
 - git clone dulu repo face-recognition-deepface https://gitlab.com/d4377/dipsv2/face-recognition-deepface.git
 - cd face-recognition-deepface
 - python3.7 -m venv venv
