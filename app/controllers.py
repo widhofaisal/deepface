@@ -62,99 +62,99 @@ def set_verify_distance(newLevel, distanceId=1):
     
 # ENDPOINT
 def identify_image(body):
-    # try:
-    currentLevel = get_identify_distance()
-    print(f"currentLevel: {currentLevel}")
-    # BINDING: using json
-    base64_image1 = body.get("data")
+    try:
+        currentLevel = get_identify_distance()
+        print(f"currentLevel: {currentLevel}")
+        # BINDING: using json
+        base64_image1 = body.get("data")
 
-    # Konversi base64 ke file .jpg and local write .jpg
-    filename = str(uuid.uuid4()) + ".jpg"
-    base64_to_jpg(base64_image1, filename, 'temp')
+        # Konversi base64 ke file .jpg and local write .jpg
+        filename = str(uuid.uuid4()) + ".jpg"
+        base64_to_jpg(base64_image1, filename, 'temp')
 
-    # AI:
-    df = DeepFace.find(os.path.join(
-        tempDir, filename), db_path="images", enforce_detection=False)
-    print("-------- identify --> AI --> ", df)
-    tempDf = df
-    print("==tempDf==", tempDf)
-    df = df[0]
+        # AI:
+        df = DeepFace.find(os.path.join(
+            tempDir, filename), db_path="images", enforce_detection=False)
+        print("-------- identify --> AI --> ", df)
+        tempDf = df
+        print("==tempDf==", tempDf)
+        df = df[0]
 
-    # DEFINE:
-    successResult = {
-        "name": "identify images",
-        "message": "success to identify image with all databases images",
-        "err_code": 200,
-        "data": ""
-    }
-
-    # CHECK : is pandas dataframe empty or not
-    # empty = face not match, not empty = face match
-    # define default value
-    isMatch = False
-    if df.shape[0] > 0:
-        isMatch = True
-        print("-------- USER ALREADY REGISTERED, PLEASE LOGIN")
-        print(
-            "-------- df --> ['distance'] --> ", df['distance'])
-
-        # Get filename with highest distance (most similar)
-        index_max_cosine = df['distance'].idxmin()
-        matchesFilename = df.loc[index_max_cosine, "identity"]
-        similarity = df.loc[index_max_cosine, "distance"]
-
-        # VERIFY: to get user identity
-        id, nik, idDips, username = identify_return(matchesFilename)
-
-        # APPEND: similarity to successResult
-        successResult["data"] = {
-            "similarity": similarity
+        # DEFINE:
+        successResult = {
+            "name": "identify images",
+            "message": "success to identify image with all databases images",
+            "err_code": 200,
+            "data": ""
         }
 
-        print("similarity", similarity)
-        if similarity < currentLevel:
-            print(f"harusnya muka cocok karena similarity dibawah {currentLevel}")
+        # CHECK : is pandas dataframe empty or not
+        # empty = face not match, not empty = face match
+        # define default value
+        isMatch = False
+        if df.shape[0] > 0:
+            isMatch = True
+            print("-------- USER ALREADY REGISTERED, PLEASE LOGIN")
+            print(
+                "-------- df --> ['distance'] --> ", df['distance'])
 
-            # RESPONSE SUCCESS 200
-            data = {
-                "prediction": {
-                    "is_match": isMatch,
-                    "current_filename": "temp/"+filename,
-                    "matches_filename": matchesFilename
-                },
-                "result": {
-                    "id": id,
-                    "nik": nik,
-                    "nip": idDips,
-                    "similarity": similarity,
-                    "nama": username
-                }
+            # Get filename with highest distance (most similar)
+            index_max_cosine = df['distance'].idxmin()
+            matchesFilename = df.loc[index_max_cosine, "identity"]
+            similarity = df.loc[index_max_cosine, "distance"]
+
+            # VERIFY: to get user identity
+            id, nik, idDips, username = identify_return(matchesFilename)
+
+            # APPEND: similarity to successResult
+            successResult["data"] = {
+                "similarity": similarity
             }
-            successResult['data'] = data
-            return json.dumps(successResult, sort_keys=False)
 
-    print(f"harusnya muka ga cocok karena similarity diatas {currentLevel}")
-    # RESPONSE SUCCESS 400
-    print("-------- USER NOT FOUND, PLEASE REGISTER")
-    successResult['err_code'] = 404
-    successResult['data'] = {
-        "message": "face not found"
-    }
-    # successResult['data']["message"] = "face not found"
-    return json.dumps(successResult, sort_keys=False)
+            print("similarity", similarity)
+            if similarity < currentLevel:
+                print(f"harusnya muka cocok karena similarity dibawah {currentLevel}")
 
-    # # RESPONSE ERROR
-    # except Exception as e:
-    #     errorResult = {
-    #         "name": "identify images",
-    #         "message": f"An error occurred: {str(e)}",
-    #         "err_code": 500
-    #     }
-    #     return json.dumps(errorResult, sort_keys=False)
+                # RESPONSE SUCCESS 200
+                data = {
+                    "prediction": {
+                        "is_match": isMatch,
+                        "current_filename": "temp/"+filename,
+                        "matches_filename": matchesFilename
+                    },
+                    "result": {
+                        "id": id,
+                        "nik": nik,
+                        "nip": idDips,
+                        "similarity": similarity,
+                        "nama": username
+                    }
+                }
+                successResult['data'] = data
+                return json.dumps(successResult, sort_keys=False)
 
-    # finally:
-    #     # LOCAL DELETE : delete file .jpg in 'temp' directory
-    #     os.remove(os.path.join(tempDir, filename))
+        print(f"harusnya muka ga cocok karena similarity diatas {currentLevel}")
+        # RESPONSE SUCCESS 400
+        print("-------- USER NOT FOUND, PLEASE REGISTER")
+        successResult['err_code'] = 404
+        successResult['data'] = {
+            "message": "face not found"
+        }
+        # successResult['data']["message"] = "face not found"
+        return json.dumps(successResult, sort_keys=False)
+
+    # RESPONSE ERROR
+    except Exception as e:
+        errorResult = {
+            "name": "identify images",
+            "message": f"An error occurred: {str(e)}",
+            "err_code": 500
+        }
+        return json.dumps(errorResult, sort_keys=False)
+
+    finally:
+        # LOCAL DELETE : delete file .jpg in 'temp' directory
+        os.remove(os.path.join(tempDir, filename))
 
 
 # TODO:
