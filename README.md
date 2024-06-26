@@ -15,6 +15,19 @@ gunicorn main:app -b 0.0.0.0:6000 --timeout 86400 --access-logfile /home/adminis
 ```
 - lokasi log access: /home/administrator/deepface/log/access.log
 - lokasi log error: /home/administrator/deepface/log/error.log
+
+<br>
+
+- cara restart nya: ganti master_pid dengan pid yang di paling kiri
+```
+ps aux | grep gunicorn
+kill -HUP <master_pid>
+```
+- cara delete nya: ganti master_pid dengan pid yang di paling kiri
+```
+ps aux | grep gunicorn
+kill -TERM <master_pid>
+```
 <br>
 
 ## CARA RUN 2 : pakai virtual env dan pm2
