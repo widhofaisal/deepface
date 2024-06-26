@@ -11,7 +11,7 @@
 
 ## CARA RUN 1 : pakai gunicorn
 ```
-gunicorn main:app -b 0.0.0.0:6000 --timeout 86400 --access-logfile /home/administrator/deepface/log/access.log --error-logfile /home/administrator/deepface/log/error.log --capture-output --log-level debug --daemon
+gunicorn main:app -b 0.0.0.0:5000 --timeout 86400 --access-logfile /home/administrator/deepface/log/access.log --error-logfile /home/administrator/deepface/log/error.log --capture-output --log-level debug --daemon
 ```
 - lokasi log access: /home/administrator/deepface/log/access.log
 - lokasi log error: /home/administrator/deepface/log/error.log

@@ -138,7 +138,7 @@ def identify_image(body):
         print("-------- USER NOT FOUND, PLEASE REGISTER")
         successResult['err_code'] = 404
         successResult['data'] = {
-            "message": "face not found"
+            "message": "face not found",
         }
         # successResult['data']["message"] = "face not found"
         return json.dumps(successResult, sort_keys=False)
@@ -190,12 +190,12 @@ def verify_image(body):
         print(df["distance"])
         if df["distance"] < currentLevel:
             error_result = {
-                "name": "Erro compare images",
+                "name": "Error compare images",
                 "message": "success to compare two images",
                 "err_code": 404,
                 "data": {
                     "match": False,
-                    "distance": df["distance"],
+                    "similarity": df["distance"],
                 }
             }
             return json.dumps(error_result, sort_keys=False)
@@ -206,7 +206,7 @@ def verify_image(body):
             "err_code": 200,
             "data": {
                 "match": bool(df["verified"]),
-                "distance": df["distance"],
+                "similarity": df["distance"],
             }
         }
         return json.dumps(result, sort_keys=False)
