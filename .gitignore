@@ -7,8 +7,8 @@ venv-lnx/
 
 log/
 
-/images/*
-!/images/dont-delete.jpg
+images/*
+!images/dont-delete.png
 
-/temp/*
-!/temp/dont-delete.jpg
+temp/*
+!temp/dont-delete.png
