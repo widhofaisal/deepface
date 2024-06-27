@@ -18,6 +18,20 @@ tempDir = "temp"
 if not os.path.exists(tempDir):
     os.makedirs(tempDir)
 
+# DEFINE: 
+deepfaceModels = [
+  "VGG-Face", 
+  "Facenet", 
+  "Facenet512", 
+  "OpenFace", 
+  "DeepFace", 
+  "DeepID", 
+  "ArcFace", 
+  "Dlib", 
+  "SFace",
+  "GhostFaceNet",
+]
+
 # HELPER:
 def get_identify_distance(leveldistance_id=1):
     level_distance = LevelDistance.query.get_or_404(leveldistance_id)
@@ -74,7 +88,7 @@ def identify_image(body):
 
         # AI:
         df = DeepFace.find(os.path.join(
-            tempDir, filename), db_path="images", enforce_detection=False)
+            tempDir, filename), db_path="images", enforce_detection=False,  model_name = deepfaceModels[2])
         print("-------- identify --> AI --> ", df)
         tempDf = df
         print("==tempDf==", tempDf)
@@ -100,8 +114,11 @@ def identify_image(body):
 
             # Get filename with highest distance (most similar)
             index_max_cosine = df['distance'].idxmin()
+            print(f"index_max_cosine: {index_max_cosine}")
             matchesFilename = df.loc[index_max_cosine, "identity"]
+            print(f"matchesFilename: {matchesFilename}")
             similarity = df.loc[index_max_cosine, "distance"]
+            print(f"similarity: {similarity}")
 
             # VERIFY: to get user identity
             id, nik, idDips, username = identify_return(matchesFilename)
@@ -111,7 +128,6 @@ def identify_image(body):
                 "similarity": similarity
             }
 
-            print("similarity", similarity)
             if similarity < currentLevel:
                 print(f"harusnya muka cocok karena similarity dibawah {currentLevel}")
 
@@ -229,7 +245,7 @@ def delete_embedded_file():
     try:
         # LOCAL DELETE :
         folder = "images"
-        filePath = os.path.join(folder, "representations_vgg_face.pkl")
+        filePath = os.path.join(folder, "representations_facenet512.pkl")
         os.remove(filePath)
 
         # RESPONSE SUCCESS
